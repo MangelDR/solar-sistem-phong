@@ -39,9 +39,12 @@ struct bodie {
 	GLuint texture_id;
 	GLuint texture_spec_id;
 	GLuint normal_map_id;
+	GLuint texture_trans_id;
+	float clouds_rotation;
 	vec3 position;
 	vec3 scale; 
-	float orbit_angle;
+	float orbit_angle; 
+	float rotacion;
 	float orbit_speed;
 	float dist_to_sun;
 };
@@ -49,7 +52,7 @@ struct bodie {
 vector<bodie> bodies;
 
 //global variables to help us do things
-int g_ViewportWidth = 512; int g_ViewportHeight = 512; // Default window size, in pixels
+int g_ViewportWidth = 800; int g_ViewportHeight = 800; // Default window size, in pixels
 double mouse_x, mouse_y; //variables storing mouse position
 const vec3 g_backgroundColor(0.2f, 0.2f, 0.2f); // background colour - a GLM 3-component vector
 int camera_mode = 0; 
@@ -57,10 +60,12 @@ float g_NumPlanets = 0;
 float dist_to_sun0 = 10; 
 
 GLuint g_simpleShader = 0;
+GLuint g_transparencyShader = 0;
 GLuint g_phongShader = 0;
 GLuint g_phongEarthShader = 0; 
 
 GLuint texture_skybox_id = 0; 
+GLuint texture_cloud_id = 0;
 
 vec3 g_light_dir(0, 0, 0);
 
@@ -104,6 +109,9 @@ void load()
 
 	Shader phongEarthShader("src/shader.vert", "src/shader_phong_earth.frag");
 	g_phongEarthShader = phongEarthShader.program;
+
+	Shader transparencyShader("src/shader.vert", "src/shader_transparency.frag");
+	g_transparencyShader = transparencyShader.program;
 
 	// Create the VAO where we store all geometry (stored in g_Vao)
 	g_Vao = gl_createAndBindVAO();
@@ -208,8 +216,10 @@ void load()
 		actualPlanet.scale = vec3(scales[i], scales[i], scales[i]);
 		actualPlanet.texture_id = texture_id;
 		actualPlanet.type = type[i];
+		actualPlanet.clouds_rotation = 0;
 		actualPlanet.orbit_speed = rand() % 10 + 1;
 		actualPlanet.orbit_angle = rand() % 10 + 1;
+		actualPlanet.rotacion = 0;
 		bodies.push_back(actualPlanet);
 	}
 
@@ -230,69 +240,122 @@ void load()
 		GL_UNSIGNED_BYTE,
 		image->pixels);
 
+	image = loadBMP("assets/textures/earth/clouds.bmp");
+
+	glGenTextures(1, &texture_cloud_id);
+	glBindTexture(GL_TEXTURE_2D, texture_cloud_id);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	glTexImage2D(GL_TEXTURE_2D,
+		0,
+		GL_RGB,
+		image->width,
+		image->height,
+		0,
+		GL_RGB,
+		GL_UNSIGNED_BYTE,
+		image->pixels);
+
 
 }
 
-void drawEarth(vec3 position, GLuint texture_id, GLuint texture_spec_id, GLuint normal_map_id, vec3 bodie_scale) {
+void drawEarth(bodie Earth) {
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 
 	// activate shader
-	glUseProgram(g_phongShader);
+	glUseProgram(g_phongEarthShader);
 
-	GLuint projection_loc = glGetUniformLocation(g_phongShader, "u_projection");
+	GLuint projection_loc = glGetUniformLocation(g_phongEarthShader, "u_projection");
 	glUniformMatrix4fv(projection_loc, 1, GL_FALSE, glm::value_ptr(projection_matrix));
 
-	GLuint view_loc = glGetUniformLocation(g_phongShader, "u_view");
+	GLuint view_loc = glGetUniformLocation(g_phongEarthShader, "u_view");
 	glUniformMatrix4fv(view_loc, 1, GL_FALSE, glm::value_ptr(view_matrix));
 
-	GLuint model_loc = glGetUniformLocation(g_phongShader, "u_model");
-	mat4 model = translate(scale(mat4(1.0f), bodie_scale), position);
+	GLuint model_loc = glGetUniformLocation(g_phongEarthShader, "u_model");
+	mat4 model = translate(scale(mat4(1.0f), Earth.scale), Earth.position);
+	model = glm::rotate(model, 10.0f, vec3(0.0f, 0.0f, 1.0f));
+	model = glm::rotate(model, Earth.rotacion, vec3(0.3f, 1.0f, 0.0f));
 	glUniformMatrix4fv(model_loc, 1, GL_FALSE, glm::value_ptr(model));
 
-	GLuint u_normal_matrix = glGetUniformLocation(g_phongShader, "u_normal_matrix");
+	GLuint u_normal_matrix = glGetUniformLocation(g_phongEarthShader, "u_normal_matrix");
 	mat3 normal_matrix = inverseTranspose((mat3(model)));
 	glUniformMatrix3fv(u_normal_matrix, 1, GL_FALSE, glm::value_ptr(normal_matrix));
 
-	GLuint light_dir_loc = glGetUniformLocation(g_phongShader, "u_light_dir");
-	glUniform3f(light_dir_loc, g_light_dir.x - position.x, g_light_dir.y - position.y, g_light_dir.z - position.z);
+	GLuint light_dir_loc = glGetUniformLocation(g_phongEarthShader, "u_light_dir");
+	glUniform3f(light_dir_loc, g_light_dir.x - Earth.position.x, g_light_dir.y - Earth.position.y, g_light_dir.z - Earth.position.z);
 
-	GLuint light_color_loc = glGetUniformLocation(g_phongShader, "u_light_color");
+	GLuint light_color_loc = glGetUniformLocation(g_phongEarthShader, "u_light_color");
 	glUniform3f(light_color_loc, 1.0, 1.0, 1.0);
 
-	GLuint eye_loc = glGetUniformLocation(g_phongShader, "u_eye");
+	GLuint eye_loc = glGetUniformLocation(g_phongEarthShader, "u_eye");
 	glUniform3f(eye_loc, eye.x, eye.y, eye.z);
 
-	GLuint ambient_loc = glGetUniformLocation(g_phongShader, "u_ambient");
+	GLuint ambient_loc = glGetUniformLocation(g_phongEarthShader, "u_ambient");
 	glUniform3f(ambient_loc, 0.1, 0.1, 0.1);
 
-	GLuint glossiness_loc = glGetUniformLocation(g_phongShader, "u_glossiness");
+	GLuint glossiness_loc = glGetUniformLocation(g_phongEarthShader, "u_glossiness");
 	glUniform1f(glossiness_loc, 50);
 
-	GLuint u_texture = glGetUniformLocation(g_phongShader, "u_texture");
+	GLuint u_texture = glGetUniformLocation(g_phongEarthShader, "u_texture");
 	glUniform1i(u_texture, 0);
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, texture_id);
+	glBindTexture(GL_TEXTURE_2D, Earth.texture_id);
 
-	GLuint u_texture_spec = glGetUniformLocation(g_phongShader, "u_texture_spec");
-	glUniform1i(u_texture_spec, 0);
+	GLuint u_texture_spec = glGetUniformLocation(g_phongEarthShader, "u_texture_spec");
+	glUniform1i(u_texture_spec, 1);
 
 	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, texture_spec_id);
+	glBindTexture(GL_TEXTURE_2D, Earth.texture_spec_id);
 
-	GLuint u_normal_map = glGetUniformLocation(g_phongShader, "u_normal_map");
-	glUniform1i(u_normal_map, 0);
+	GLuint u_normal_map = glGetUniformLocation(g_phongEarthShader, "u_normal_map");
+	glUniform1i(u_normal_map, 2);
 
 	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, normal_map_id);
+	glBindTexture(GL_TEXTURE_2D, Earth.normal_map_id);
 
 	//bind the geometry
 	gl_bindVAO(g_Vao);
 
 	// Draw to screen
 	glDrawElements(GL_TRIANGLES, 3 * g_NumTriangles, GL_UNSIGNED_INT, 0);
+
+
+
+	//----------------------
+	//--CLOUDS--------------
+	//----------------------
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	glUseProgram(g_transparencyShader);
+
+	projection_loc = glGetUniformLocation(g_transparencyShader, "u_projection");
+	glUniformMatrix4fv(projection_loc, 1, GL_FALSE, glm::value_ptr(projection_matrix));
+
+	view_loc = glGetUniformLocation(g_transparencyShader, "u_view");
+	glUniformMatrix4fv(view_loc, 1, GL_FALSE, glm::value_ptr(view_matrix));
+
+	model_loc = glGetUniformLocation(g_transparencyShader, "u_model");
+	model = translate(mat4(1.0f), Earth.position);
+	model = glm::scale(model, vec3(1.03f, 1.03f, 1.03f));
+	model = glm::rotate(model, Earth.clouds_rotation, vec3(0.0f, 1.0f, 0.0f));
+	glUniformMatrix4fv(model_loc, 1, GL_FALSE, glm::value_ptr(model));
+
+	GLuint u_transparency_loc = glGetUniformLocation(g_transparencyShader, "u_transparency");
+	glUniform1f(u_transparency_loc, 0.3f);
+
+	u_texture = glGetUniformLocation(g_transparencyShader, "u_texture");
+	glUniform1i(u_texture, 0);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, texture_cloud_id);
+
+	glDrawElements(GL_TRIANGLES, 3 * g_NumTriangles, GL_UNSIGNED_INT, 0);
+	glDisable(GL_BLEND);
 }
 
 
@@ -421,7 +484,6 @@ void drawUniverse()
 
 	// Draw to screen
 	glDrawElements(GL_TRIANGLES, 3 * g_NumTriangles, GL_UNSIGNED_INT, 0);
-
 }
 
 // ------------------------------------------------------------------------------------------
@@ -451,12 +513,17 @@ void update() {
 	for (int i = 1; i < g_NumPlanets; i++) {
 		bodies[i].position = vec3((dist_to_sun0 + i)*bodies[i].dist_to_sun*cos(bodies[i].orbit_angle), 0, (dist_to_sun0 + i)*bodies[i].dist_to_sun*sin(bodies[i].orbit_angle));
 		bodies[i].orbit_angle += bodies[i].orbit_speed * 0.001;
+		bodies[i].clouds_rotation +=  0.1f;
+		if (bodies[i].clouds_rotation > 360) bodies[i].clouds_rotation = 0;
+
+		bodies[i].rotacion += -0.1f;
+		if (bodies[i].rotacion > 360) bodies[i].rotacion = 0;
 	}
 
 	switch (camera_mode)
 	{
 	case 1: 
-		eye = vec3(bodies[3].position.x, bodies[3].position.y, bodies[3].position.z + 10);
+		eye = vec3(bodies[3].position.x, bodies[3].position.y, bodies[3].position.z + 5);
 		center = bodies[3].position;
 		
 		break;
@@ -482,7 +549,7 @@ int main(void)
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	window = glfwCreateWindow(g_ViewportWidth, g_ViewportHeight, "Hello OpenGL!", NULL, NULL);
+	window = glfwCreateWindow(g_ViewportWidth, g_ViewportHeight, "Solar System: Phong Test", NULL, NULL);
 	if (!window) {glfwTerminate();	return -1;}
 	glfwMakeContextCurrent(window);
 	glewExperimental = GL_TRUE;
@@ -508,7 +575,7 @@ int main(void)
 
 		for (int i = 1; i < g_NumPlanets; i++) {
 			if (bodies[i].name == "Earth") {
-				drawEarth(bodies[i].position, bodies[i].texture_id, bodies[i].texture_spec_id, bodies[i].normal_map_id, bodies[i].scale);
+				drawEarth(bodies[i]);
 			}
 			else {
 				drawPlanet(bodies[i].position, bodies[i].texture_id, bodies[i].scale);

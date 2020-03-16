@@ -7,6 +7,7 @@ in vec3 a_normal;
 out vec2 v_uv;
 out vec3 v_normal; 
 out vec3 v_pos;
+out vec3 T, B, N;
 
 uniform mat4 u_model;
 uniform mat4 u_projection;

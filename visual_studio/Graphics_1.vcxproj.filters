@@ -61,5 +61,8 @@
     <None Include="..\src\shader_phong_earth.frag">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="..\src\shader_transparency.frag">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
