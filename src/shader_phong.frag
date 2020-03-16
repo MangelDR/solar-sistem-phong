@@ -31,5 +31,4 @@ void main(void)
 
 	// We're just going to paint the interpolated colour from the vertex shader
 	fragColor =  vec4(ambient_color + diffuse_color + specular_color, 1.0);
-	fragColor =  vec4(RdotE,0,0, 1.0);
 }
