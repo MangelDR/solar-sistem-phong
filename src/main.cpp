@@ -1,4 +1,4 @@
-/*  by Alun Evans 2016 LaSalle (aevanss@salleurl.edu) */
+/*  by Miguel Ángel Díaz Rodríguez (MangelDR) última acualización  */
 
 //include some standard libraries
 #include <stdio.h>
@@ -19,60 +19,59 @@
 #include "glfunctions.h" //include all OpenGL stuff
 #include "Shader.h" // class to compile shaders
 
+//include custome loaders 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 #include "imageloader.h"
-
-std::string basepath = "assets/";
-std::string inputfile = basepath + "sphere.obj";
-std::vector< tinyobj::shape_t > shapes;
-std::vector< tinyobj::material_t > materials;
-std::string err;
-bool ret = tinyobj::LoadObj(shapes, materials, err, inputfile.c_str(), basepath.c_str());
 
 using namespace std;
 using namespace glm;
 
 struct bodie {
 	string name;
-	string type; 
+	string type;
 	GLuint texture_id;
 	GLuint texture_spec_id;
 	GLuint normal_map_id;
 	GLuint texture_trans_id;
+	GLuint texture_night_id;
 	float clouds_rotation;
 	vec3 position;
-	vec3 scale; 
-	float orbit_angle; 
+	vec3 scale;
+	float orbit_angle;
 	float rotacion;
 	float orbit_speed;
 	float dist_to_sun;
 };
 
-vector<bodie> bodies;
+vector<bodie> bodies; //Planets
 
-//global variables to help us do things
+//Sistem
 int g_ViewportWidth = 800; int g_ViewportHeight = 800; // Default window size, in pixels
 double mouse_x, mouse_y; //variables storing mouse position
 const vec3 g_backgroundColor(0.2f, 0.2f, 0.2f); // background colour - a GLM 3-component vector
-int camera_mode = 0; 
-float g_NumPlanets = 0; 
-float dist_to_sun0 = 10; 
 
+vec3 eye(0, 0, 50), center(0.0, 0.0, 0.0), up(0, 1, 0); //Camera  
+int camera_mode = 1; //Camera type - Default -> Earth Camera
+
+//Shaders 
 GLuint g_simpleShader = 0;
 GLuint g_transparencyShader = 0;
 GLuint g_phongShader = 0;
 GLuint g_phongEarthShader = 0; 
 
+//Extra textures
 GLuint texture_skybox_id = 0; 
 GLuint texture_cloud_id = 0;
 
-vec3 g_light_dir(0, 0, 0);
+//Variables of the sistem 
+float g_NumPlanets = 0;
+vec3 g_light_dir(0, 0, 0); //Lighting 
+float dist_to_sun0 = 10; //Distance first planet-sun
 
-GLuint g_Vao = 0; //vao
-GLuint g_NumTriangles = 0; //  Numbre of triangles we are painting.
 
-vec3 eye(0, 0, 50), center(0.0, 0.0, 0.0), up(0, 1, 0);
+GLuint g_Vao = 0; //Sphere -> Vao
+GLuint g_NumTriangles = 0; // Numbre of triangles we are painting.
 
 
 mat4 projection_matrix = perspective(
@@ -89,18 +88,11 @@ mat4 view_matrix = glm::lookAt(
 );
 
 // ------------------------------------------------------------------------------------------
-// This function manually creates a square geometry (defined in the array vertices[])
+// This function load all the geometry and textures
 // ------------------------------------------------------------------------------------------
 void load()
 {
-	//test it loaded correctly
-	if (!err.empty()) { // `err` may contain warning message.
-		std::cerr << err << std::endl;
-	}
-	//print out number of meshes described in file
-	std::cout << "# of shapes : " << shapes.size() << std::endl;
-
-	//load the shader
+	//SHADERS LOADS
 	Shader simpleShader("src/shader.vert", "src/shader_simple.frag");
 	g_simpleShader = simpleShader.program;
 
@@ -113,7 +105,22 @@ void load()
 	Shader transparencyShader("src/shader.vert", "src/shader_transparency.frag");
 	g_transparencyShader = transparencyShader.program;
 
-	// Create the VAO where we store all geometry (stored in g_Vao)
+
+
+	//SPHERE LOAD
+	std::string basepath = "assets/";
+	std::string inputfile = basepath + "sphere.obj";
+	std::vector< tinyobj::shape_t > shapes;
+	std::vector< tinyobj::material_t > materials;
+	std::string err;
+	bool ret = tinyobj::LoadObj(shapes, materials, err, inputfile.c_str(), basepath.c_str());
+
+	//test it loaded correctly
+	if (!err.empty()) { // `err` may contain warning message.
+		std::cerr << err << std::endl;
+	}
+
+	//create the VAO where we store all geometry (stored in g_Vao)
 	g_Vao = gl_createAndBindVAO();
 
 	//create vertex buffer for positions, colors, and indices, and bind them to shader
@@ -129,6 +136,7 @@ void load()
 	//store number of triangles (use in draw())
 	g_NumTriangles = shapes[0].mesh.indices.size() / 3;
 
+	//All planets informatión 
 	vector<float> scales = { 10, 0.38, 0.95, 1, 0.53,  1.12, 9.45, 4, 3.88 };
 	vector<string> names = { "Sun", "Mercury", "Venus", "Earth", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune" };
 	vector<char*> textures = { "assets/textures/sunmap.bmp", "assets/textures/mercurymap.bmp", "assets/textures/venusmap.bmp", "assets/textures/earth/earthmap1k.bmp", "assets/textures/marsmap.bmp", "assets/textures/jupitermap.bmp", "assets/textures/saturnmap.bmp", "assets/textures/uranusmap.bmp", "assets/textures/mercurymap.bmp" };
@@ -145,7 +153,7 @@ void load()
 
 		if (actualPlanet.name == "Earth") {
 
-			image = loadBMP("assets/textures/earth/earthspec.bmp");
+			image = loadBMP("assets/textures/earth/earthspec.bmp"); //Specular Textura
 
 			glGenTextures(1, &texture_id);
 			glBindTexture(GL_TEXTURE_2D, texture_id);
@@ -164,7 +172,7 @@ void load()
 
 			actualPlanet.texture_spec_id = texture_id;
 
-			image = loadBMP("assets/textures/earth/earthnormal.bmp");
+			image = loadBMP("assets/textures/earth/earthnormal.bmp"); //Normal map 
 
 			glGenTextures(1, &texture_id);
 			glBindTexture(GL_TEXTURE_2D, texture_id);
@@ -182,10 +190,30 @@ void load()
 				image->pixels);
 
 			actualPlanet.normal_map_id = texture_id;
+
+			image = loadBMP("assets/textures/earth/2k_earth_nightmap.bmp"); //Night Earth texture
+
+			glGenTextures(1, &texture_id);
+			glBindTexture(GL_TEXTURE_2D, texture_id);
+
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+			glTexImage2D(GL_TEXTURE_2D,
+				0,
+				GL_RGB,
+				image->width,
+				image->height,
+				0,
+				GL_RGB,
+				GL_UNSIGNED_BYTE,
+				image->pixels);
+
+			actualPlanet.texture_night_id = texture_id;
 		}
 		else {
 			actualPlanet.texture_spec_id = 0;
 			actualPlanet.normal_map_id = 0;
+			actualPlanet.texture_night_id = 0;
 		}
 
 		image = loadBMP(textures[i]);
@@ -217,13 +245,13 @@ void load()
 		actualPlanet.texture_id = texture_id;
 		actualPlanet.type = type[i];
 		actualPlanet.clouds_rotation = 0;
-		actualPlanet.orbit_speed = rand() % 10 + 1;
-		actualPlanet.orbit_angle = rand() % 10 + 1;
+		actualPlanet.orbit_speed = (rand() % 50 + 1)/10;
+		actualPlanet.orbit_angle = (rand() % 50 + 1) / 10;
 		actualPlanet.rotacion = 0;
 		bodies.push_back(actualPlanet);
 	}
 
-	Image* image = loadBMP("assets/textures/milkyway.bmp");
+	Image* image = loadBMP("assets/textures/milkyway.bmp"); //Skybox
 
 	glGenTextures(1, &texture_skybox_id);
 	glBindTexture(GL_TEXTURE_2D, texture_skybox_id);
@@ -240,7 +268,7 @@ void load()
 		GL_UNSIGNED_BYTE,
 		image->pixels);
 
-	image = loadBMP("assets/textures/earth/clouds.bmp");
+	image = loadBMP("assets/textures/earth/clouds.bmp"); //Earth's Cloud 
 
 	glGenTextures(1, &texture_cloud_id);
 	glBindTexture(GL_TEXTURE_2D, texture_cloud_id);
@@ -257,9 +285,12 @@ void load()
 		GL_UNSIGNED_BYTE,
 		image->pixels);
 
-
 }
 
+
+// ------------------------------------------------------------------------------------------
+// This function draw the Earth
+// ------------------------------------------------------------------------------------------
 void drawEarth(bodie Earth) {
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
@@ -288,7 +319,7 @@ void drawEarth(bodie Earth) {
 	glUniform3f(light_dir_loc, g_light_dir.x - Earth.position.x, g_light_dir.y - Earth.position.y, g_light_dir.z - Earth.position.z);
 
 	GLuint light_color_loc = glGetUniformLocation(g_phongEarthShader, "u_light_color");
-	glUniform3f(light_color_loc, 1.0, 1.0, 1.0);
+	glUniform3f(light_color_loc, 0.99, 0.70, 0.21);
 
 	GLuint eye_loc = glGetUniformLocation(g_phongEarthShader, "u_eye");
 	glUniform3f(eye_loc, eye.x, eye.y, eye.z);
@@ -316,6 +347,13 @@ void drawEarth(bodie Earth) {
 
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, Earth.normal_map_id);
+
+	GLuint u_texture_night = glGetUniformLocation(g_phongEarthShader, "u_texture_night");
+	glUniform1i(u_texture_night, 3);
+
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, Earth.texture_night_id);
+
 
 	//bind the geometry
 	gl_bindVAO(g_Vao);
@@ -359,6 +397,9 @@ void drawEarth(bodie Earth) {
 }
 
 
+// ------------------------------------------------------------------------------------------
+// This function draw the Sun
+// ------------------------------------------------------------------------------------------
 void drawSun(vec3 position, GLuint texture_id, vec3 bodie_scale) {
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
@@ -396,6 +437,10 @@ void drawSun(vec3 position, GLuint texture_id, vec3 bodie_scale) {
 	glDrawElements(GL_TRIANGLES, 3 * g_NumTriangles, GL_UNSIGNED_INT, 0);
 }
 
+
+// ------------------------------------------------------------------------------------------
+// This function draw the rest of the planets
+// ------------------------------------------------------------------------------------------
 void drawPlanet(vec3 position, GLuint texture_id, vec3 bodie_scale)
 {
 	glEnable(GL_DEPTH_TEST);
@@ -448,6 +493,9 @@ void drawPlanet(vec3 position, GLuint texture_id, vec3 bodie_scale)
 
 }
 
+// ------------------------------------------------------------------------------------------
+// This function draw the Skybox
+// ------------------------------------------------------------------------------------------
 void drawUniverse()
 {
 	glDisable(GL_DEPTH_TEST);
@@ -501,7 +549,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 }
 
 // ------------------------------------------------------------------------------------------
-// This function is called every time you click the mouse
+// This function is called every time you click the mouse (You can use this is you want)
 // ------------------------------------------------------------------------------------------
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
     if (button == GLFW_MOUSE_BUTTON_LEFT) {
@@ -516,7 +564,7 @@ void update() {
 		bodies[i].clouds_rotation +=  0.1f;
 		if (bodies[i].clouds_rotation > 360) bodies[i].clouds_rotation = 0;
 
-		bodies[i].rotacion += -0.1f;
+		bodies[i].rotacion += -0.05f;
 		if (bodies[i].rotacion > 360) bodies[i].rotacion = 0;
 	}
 
