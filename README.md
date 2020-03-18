@@ -1,4 +1,4 @@
-# solar-sistem-phong
+# Solar Sistem Phong
 
 Pequeño sistema solar en OpenGL apliacando la técnica de sombreado de Phong. 
 
@@ -11,7 +11,7 @@ El código no busca ser óptimo. Es un ejercicio personal para mejorar en el apa
 
 -----------------------------------------------
 
-# solar-sistem-phong
+# Solar Sistem Phong
 
 Small OpenGL solar system applying the Phong shading technique.
 
