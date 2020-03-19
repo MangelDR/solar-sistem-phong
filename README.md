@@ -2,7 +2,7 @@
 
 Pequeño sistema solar en OpenGL apliacando la técnica de sombreado de Phong. 
 
-![Phong-Theory](https://raw.githubusercontent.com/MangelDR/solar-sistem-phong/master/images/Phong-Theory.jpg)
+![Phong-Theory](https://raw.githubusercontent.com/MangelDR/solar-sistem-phong/master/images/Phong-Theory.png)
 
 El código no busca ser óptimo. Es un ejercicio personal para mejorar en el apartado de Gráficos 3D usando el mínimo numero de características externas. Creado en base a una práctica de la asignatura de Gráficos 3D (URL La Salle, Barcelona) 
 
