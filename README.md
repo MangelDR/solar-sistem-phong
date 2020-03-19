@@ -2,6 +2,8 @@
 
 Pequeño sistema solar en OpenGL apliacando la técnica de sombreado de Phong. 
 
+![Phong-Theory](https://raw.githubusercontent.com/MangelDR/solar-sistem-phong/master/images/3.%20Phong.png)
+
 El código no busca ser óptimo. Es un ejercicio personal para mejorar en el apartado de Gráficos 3D usando el mínimo numero de características externas. Creado en base a una práctica de la asignatura de Gráficos 3D (URL La Salle, Barcelona) 
 
 ## Para el desarrollo del programa he utilizado. 
@@ -26,20 +28,20 @@ The code does not seek to be optimal. It is a personal exercise to improve in th
 
 #### Images: 
 ## Only Texture
-![Texture](https://raw.githubusercontent.com/MangelDR/solar-sistem-phong/blob/master/images/1.%20Texture%20only.png)
+![Texture](https://raw.githubusercontent.com/MangelDR/solar-sistem-phong/master/images/1.%20Texture%20only.png)
 
 ## Lambertian
-![Lambertian](https://raw.githubusercontent.com/MangelDR/solar-sistem-phong/blob/master/images/2.%20Lambertian.png)
+![Lambertian](https://raw.githubusercontent.com/MangelDR/solar-sistem-phong/master/images/2.%20Lambertian.png)
 
 ## Phong
-![Phong](https://raw.githubusercontent.com/MangelDR/solar-sistem-phong/blob/master/images/3.%20Phong.png)
+![Phong](https://raw.githubusercontent.com/MangelDR/solar-sistem-phong/master/images/3.%20Phong.png)
 
 ## Extras
 * Night Texture
 * Normal Map 
 * Alpha texture (Clouds)
 
-![Extras1](https://raw.githubusercontent.com/MangelDR/solar-sistem-phong/blob/master/images/4.%20Extras1.png)
+![Extras1](https://raw.githubusercontent.com/MangelDR/solar-sistem-phong/master/images/4.%20Extras1.png)
 
-![Extras2](https://raw.githubusercontent.com/MangelDR/solar-sistem-phong/blob/master/images/4.%20Extras2.png)
+![Extras2](https://raw.githubusercontent.com/MangelDR/solar-sistem-phong/master/images/4.%20Extras2.png)
 
