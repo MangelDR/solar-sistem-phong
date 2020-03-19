@@ -26,20 +26,20 @@ The code does not seek to be optimal. It is a personal exercise to improve in th
 
 #### Images: 
 ## Only Texture
-![Texture](https://raw.githubusercontent.com/MangelDR/solar-sistem-phong/blob/master/images/1.%20Texture%20only.png)
+![Texture](https://raw.githubusercontent.com/MangelDR/solar-sistem-phong/master/images/1.%20Texture%20only.png)
 
 ## Lambertian
-![Lambertian](https://raw.githubusercontent.com/MangelDR/solar-sistem-phong/blob/master/images/2.%20Lambertian.png)
+![Lambertian](https://raw.githubusercontent.com/MangelDR/solar-sistem-phong/master/images/2.%20Lambertian.png)
 
 ## Phong
-![Phong](https://raw.githubusercontent.com/MangelDR/solar-sistem-phong/blob/master/images/3.%20Phong.png)
+![Phong](https://raw.githubusercontent.com/MangelDR/solar-sistem-phong/master/images/3.%20Phong.png)
 
 ## Extras
 * Night Texture
 * Normal Map 
 * Alpha texture (Clouds)
 
-![Extras1](https://raw.githubusercontent.com/MangelDR/solar-sistem-phong/blob/master/images/4.%20Extras1.png)
+![Extras1](https://raw.githubusercontent.com/MangelDR/solar-sistem-phong/master/images/4.%20Extras1.png)
 
-![Extras2](https://raw.githubusercontent.com/MangelDR/solar-sistem-phong/blob/master/images/4.%20Extras2.png)
+![Extras2](https://raw.githubusercontent.com/MangelDR/solar-sistem-phong/master/images/4.%20Extras2.png)
 
